@@ -272,7 +272,41 @@ class ReportController extends Controller
 
     public function ageReport(Request $request)
     {
-        return view('reports.age');
+        $startperiod = $this->getStartperiod($request);
+        $data = Period::orderBy('year_id')->orderBy('order')->orderBy('id')
+            ->where('id', '>=', $startperiod->id)
+            ->get()
+            ->groupBy('year_id')
+            ->map(function ($yearData) {
+                $yearPeriods = [];
+
+                foreach ($yearData as $period) {
+                    $periodStats = new StatService(external: false, reference: $period);
+                    $studentCountInPeriod = $periodStats->studentsCount();
+
+                    $yearPeriods[$period->id]['period'] = $period->name;
+                    $yearPeriods[$period->id]['male'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(2) / $studentCountInPeriod : 0;
+                    $yearPeriods[$period->id]['female'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(1) / $studentCountInPeriod : 0;
+                    $yearPeriods[$period->id]['unknown'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(0) / $studentCountInPeriod : 0;
+                }
+
+                $year = $yearData[0]->year;
+                $yearStats = new StatService(external: false, reference: $year);
+                $studentCountInYear = $yearStats->studentsCount();
+
+                return [
+                    'year' => $year->name,
+                    'male' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(2) / $studentCountInYear : 0,
+                    'female' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(1) / $studentCountInYear : 0,
+                    'unknown' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(0) / $studentCountInYear : 0,
+                    'periods' => $yearPeriods,
+                ];
+            });
+
+        return view('reports.age', [
+            'data' => $data,
+            'selected_period' => $startperiod,
+        ]);
     }
 
     /**
