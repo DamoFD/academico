@@ -270,6 +270,11 @@ class ReportController extends Controller
         ]);
     }
 
+    public function ageReport(Request $request)
+    {
+        return view('reports.age');
+    }
+
     /**
      * Show the enrollment numbers per rhythm.
      */
