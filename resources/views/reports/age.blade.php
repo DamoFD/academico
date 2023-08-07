@@ -40,6 +40,7 @@
                             <th>@lang('13-18')</th>
                             <th>@lang('19-21')</th>
                             <th>@lang('21+')</th>
+                            <th>@lang('unknown')</th>
                         </thead>
 
                         <tbody>
@@ -49,40 +50,51 @@
                                         <td></td>
                                         <td>{{ $period['period'] }}</td>
                                         <td>
-                                            {{ number_format($period['0-6']) }} %
+                                            @if ($period['unknown'] < 25) {{ number_format($period['0-6']) }} %
+                                            @else {{__('Insufficient data')}} @endif
                                         </td>
                                         <td>
-                                            {{ number_format($period['7-12']) }} %
+                                            @if ($period['unknown'] < 25) {{ number_format($period['7-12']) }} %
+                                            @else {{__('Insufficient data')}} @endif
                                         </td>
                                         <td>
-                                            {{ number_format($period['13-18']) }} %
+                                            @if ($period['unknown'] < 25) {{ number_format($period['13-18']) }} %
+                                            @else {{__('Insufficient data')}} @endif
                                         </td>
                                         <td>
-                                            {{ number_format($period['19-21']) }} %
+                                            @if ($period['unknown'] < 25) {{ number_format($period['19-21']) }} %
+                                            @else {{__('Insufficient data')}} @endif
                                         </td>
                                         <td>
-                                            {{ number_format($period['21+']) }} %
+                                            @if ($period['unknown'] < 25) {{ number_format($period['21+']) }} %
+                                            @else {{__('Insufficient data')}} @endif
+                                        </td>
+                                        <td>
+                                            <span class="{{ $period['unknown'] < 25 ? '' : 'text-danger' }}">{{ number_format($period['unknown']) }} %</span>
                                         </td>
                                     </tr>
                                 @endforeach
                                 <tr style="font-weight: bold">
                                     <td>{{ $year['year'] }}</td>
                                     <td></td>
-                                        <td>
-                                            {{ number_format($period['0-6']) }} %
-                                        </td>
-                                        <td>
-                                            {{ number_format($period['7-12']) }} %
-                                        </td>
-                                        <td>
-                                            {{ number_format($period['13-18']) }} %
-                                        </td>
-                                        <td>
-                                            {{ number_format($period['19-21']) }} %
-                                        </td>
-                                        <td>
-                                            {{ number_format($period['21+']) }} %
-                                        </td>
+                                    <td>
+                                        {{ number_format($period['0-6']) }} %
+                                    </td>
+                                    <td>
+                                        {{ number_format($period['7-12']) }} %
+                                    </td>
+                                    <td>
+                                        {{ number_format($period['13-18']) }} %
+                                    </td>
+                                    <td>
+                                        {{ number_format($period['19-21']) }} %
+                                    </td>
+                                    <td>
+                                        {{ number_format($period['21+']) }} %
+                                    </td>
+                                    <td>
+                                        {{ number_format($period['unknown']) }} %
+                                    </td>
                                 </tr>
                             @endforeach
 
@@ -127,10 +139,16 @@
                 for (const periodKey in yearData.periods) {
                     if (yearData.periods.hasOwnProperty(periodKey)) {
                         const periodData = yearData.periods[periodKey];
-                        chartData.labels.push(periodData.period);
-                        for (const range of ageRanges) {
-                            let dataset = chartData.datasets.find(ds => ds.label === range);
-                            dataset.data.push(periodData[range]);
+                        // Check if 'unknown' percentage is less or equal to 25%
+                        if (periodData['unknown'] <= 25) {
+                            chartData.labels.push(periodData.period);
+                            for (const range of ageRanges) {
+                                let dataset = chartData.datasets.find(ds => ds.label === range);
+                                // You may need to check if dataset exists before trying to push data to it
+                                if (dataset) {
+                                    dataset.data.push(periodData[range]);
+                                }
+                            }
                         }
                     }
                 }
@@ -140,11 +158,11 @@
         var ctx = document.getElementById("myChart");
 
         var myChart = new Chart(ctx, {
-            type: 'line',
+            type: 'horizontalBar',
             data: chartData,
             options: {
                 scales: {
-                    yAxes: [{
+                    xAxes: [{
                         scaleLabel: {
                             labelString: axisLabel,
                             display: true,

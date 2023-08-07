@@ -290,6 +290,13 @@ class ReportController extends Controller
                     $yearPeriods[$period->id]['13-18'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 13, 18) / $studentCountInPeriod : 0;
                     $yearPeriods[$period->id]['19-21'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 19, 21) / $studentCountInPeriod : 0;
                     $yearPeriods[$period->id]['21+'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 21) / $studentCountInPeriod : 0;
+                    $sumKnownPercentages = 0;
+                    foreach($yearPeriods[$period->id] as $ageRange => $percentage) {
+                        if($ageRange != 'period') { // avoid adding the 'period' key if it's not an age range
+                            $sumKnownPercentages += $percentage;
+                        }
+                    }
+                    $yearPeriods[$period->id]['unknown'] = 100 - $sumKnownPercentages;
                 }
 
                 $year = $yearData[0]->year;
