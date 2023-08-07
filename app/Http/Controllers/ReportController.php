@@ -287,8 +287,8 @@ class ReportController extends Controller
                     $yearPeriods[$period->id]['period'] = $period->name;
                     $yearPeriods[$period->id]['0-6'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 0, 6) / $studentCountInPeriod : 0;
                     $yearPeriods[$period->id]['7-12'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 7, 12) / $studentCountInPeriod : 0;
-                    $yearPeriods[$period->id]['8-14'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 13, 18) / $studentCountInPeriod : 0;
-                    $yearPeriods[$period->id]['15-20'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 19, 21) / $studentCountInPeriod : 0;
+                    $yearPeriods[$period->id]['13-18'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 13, 18) / $studentCountInPeriod : 0;
+                    $yearPeriods[$period->id]['19-21'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 19, 21) / $studentCountInPeriod : 0;
                     $yearPeriods[$period->id]['21+'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 21) / $studentCountInPeriod : 0;
                 }
 
@@ -298,9 +298,11 @@ class ReportController extends Controller
 
                 return [
                     'year' => $year->name,
-                    'male' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(2) / $studentCountInYear : 0,
-                    'female' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(1) / $studentCountInYear : 0,
-                    'unknown' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(0) / $studentCountInYear : 0,
+                    '0-6' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 0, 6) / $studentCountInYear : 0,
+                    '7-12' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 7, 12) / $studentCountInYear : 0,
+                    '13-18' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 13, 18) / $studentCountInYear : 0,
+                    '19-21' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 19, 21) / $studentCountInYear : 0,
+                    '21+' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 21) / $studentCountInYear : 0,
                     'periods' => $yearPeriods,
                 ];
             });

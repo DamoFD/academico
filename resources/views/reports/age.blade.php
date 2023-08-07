@@ -37,8 +37,8 @@
                             <th>@lang('Period')</th>
                             <th>@lang('0-6')</th>
                             <th>@lang('7-12')</th>
-                            <th>@lang('8-14')</th>
-                            <th>@lang('15-20')</th>
+                            <th>@lang('13-18')</th>
+                            <th>@lang('19-21')</th>
                             <th>@lang('21+')</th>
                         </thead>
 
@@ -55,10 +55,10 @@
                                             {{ number_format($period['7-12']) }} %
                                         </td>
                                         <td>
-                                            {{ number_format($period['8-14']) }} %
+                                            {{ number_format($period['13-18']) }} %
                                         </td>
                                         <td>
-                                            {{ number_format($period['15-20']) }} %
+                                            {{ number_format($period['19-21']) }} %
                                         </td>
                                         <td>
                                             {{ number_format($period['21+']) }} %
@@ -75,10 +75,10 @@
                                             {{ number_format($period['7-12']) }} %
                                         </td>
                                         <td>
-                                            {{ number_format($period['8-14']) }} %
+                                            {{ number_format($period['13-18']) }} %
                                         </td>
                                         <td>
-                                            {{ number_format($period['15-20']) }} %
+                                            {{ number_format($period['19-21']) }} %
                                         </td>
                                         <td>
                                             {{ number_format($period['21+']) }} %
@@ -103,62 +103,65 @@
 
     <script>
         $(document).ready(() => {
-            var data = @json($data->pluck('periods')->flatten(1));
-            var axisLabel = @json(__('% of students in period'));
-            var zeroToSixLabel = @json(__('0-6'));
-            var maleLabel = @json(__('Male students'));
+        var data = @json($data);
+        var axisLabel = @json(__('% of students in period'));
 
-            var chartData = {
-                labels: [],
-                datasets: [
-                    {
-                        label: zeroToSixLabel,
-                        data: [],
-                        backgroundColor: 'rgba(245,255,152,0.6)',
-                        borderColor: '#f5e700'
-                    },
-                    {
-                        label: maleLabel,
-                        data: [],
-                        borderColor: '#cb47fc',
-                        backgroundColor: 'rgba(230,176,255,0.6)'
+        var ageRanges = Object.keys(data[1]).filter(key => key !== 'year' && key !== 'periods');
+
+        var chartData = {
+            labels: [],
+            datasets: ageRanges.map((range) => {
+                return {
+                    label: range,
+                    data: [],
+                    // Add your own color styling for each dataset
+                    backgroundColor: 'rgba(245,255,152,0.6)',
+                    borderColor: '#f5e700'
+                }
+            })
+        };
+
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                const yearData = data[key];
+                for (const periodKey in yearData.periods) {
+                    if (yearData.periods.hasOwnProperty(periodKey)) {
+                        const periodData = yearData.periods[periodKey];
+                        chartData.labels.push(periodData.period);
+                        for (const range of ageRanges) {
+                            let dataset = chartData.datasets.find(ds => ds.label === range);
+                            dataset.data.push(periodData[range]);
+                        }
                     }
-                ]
-            };
-
-            for (s in data) {
-                if (data[s].unknown < 25) {
-                    chartData.labels.push(data[s].period);
-                    chartData.datasets.filter(s => s.label === femaleLabel)[0].data.push(data[s].female);
-                    chartData.datasets.filter(s => s.label === maleLabel)[0].data.push(data[s].male);
                 }
             }
+        }
 
-            var ctx = document.getElementById("myChart");
+        var ctx = document.getElementById("myChart");
 
-            var myChart = new Chart(ctx, {
-                type: 'line',
-                data: chartData,
-                options: {
-                    scales: {
-                        yAxes: [{
-                            scaleLabel: {
-                                labelString: axisLabel,
-                                display: true,
-                            },
-                            ticks: {
-                                beginAtZero: true,
-                                max: 100,
-                            }
-                        }]
-                    },
-                    legend: {
-                        display: true
-                    },
-                    aspectRatio: '4'
-                }
-            });
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                scales: {
+                    yAxes: [{
+                        scaleLabel: {
+                            labelString: axisLabel,
+                            display: true,
+                        },
+                        ticks: {
+                            beginAtZero: true,
+                            max: 100,
+                        }
+                    }]
+                },
+                legend: {
+                    display: true
+                },
+                aspectRatio: '4'
+            }
         });
+    });
     </script>
 
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-html5-1.6.1/b-print-1.6.1/datatables.min.css"/>
