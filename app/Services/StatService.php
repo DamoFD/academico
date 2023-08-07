@@ -112,15 +112,15 @@ class StatService
         };
     }
 
+    private array $validGenders = [0, 1, 2];
+
     private function countInternalStudentsForYear(?int $gender = null, ?int $age_start = null, ?int $age_end = null)
     {
         if ($this->reference::class !== Year::class) {
             abort(422, 'Logic error');
         }
 
-        $validGenders = [0, 1, 2];
-
-        if (in_array($gender, $validGenders) || $age_start !== null || $age_end !== null) {
+        if (in_array($gender, $this->validGenders) || $age_start !== null || $age_end !== null) {
             return DB::table('enrollments')
                 ->join('courses', 'enrollments.course_id', 'courses.id')
                 ->join('periods', 'courses.period_id', 'periods.id')
@@ -128,11 +128,13 @@ class StatService
                 ->where('periods.year_id', $this->reference->id)
                 ->whereIn('enrollments.status_id', Enrollment::ENROLLMENT_STATUSES_TO_COUNT_IN_STATS)
                 ->where('enrollments.parent_id', null)->where('enrollments.deleted_at', null)
-                ->when($gender, function($query, $gender) {
-                    if ($gender === 0) {
-                        return $query->where('students.gender_id', 0)->orWhereNull('students.gender_id');
-                    } else {
-                        return $query->where('students.gender_id', $gender);
+                ->tap(function($query) use ($gender) {
+                    if ($gender !== null) {
+                        if ($gender === 0) {
+                            $query->where('students.gender_id', $gender)->orWhereNull('students.gender_id');
+                        } else {
+                            $query->where('students.gender_id', $gender);
+                        }
                     }
                 })
                 ->when($age_start, function($query, $age_start) {
@@ -144,42 +146,40 @@ class StatService
                 ->distinct('student_id')->count('enrollments.student_id');
         }
 
-        return DB::table('enrollments')->join('courses', 'enrollments.course_id', 'courses.id')->join('periods', 'courses.period_id', 'periods.id')->where('periods.year_id', $this->reference->id)->whereIn('enrollments.status_id', Enrollment::ENROLLMENT_STATUSES_TO_COUNT_IN_STATS)
-        ->where('enrollments.parent_id', null)->where('enrollments.deleted_at', null)->distinct('student_id')->count('enrollments.student_id');
+        return dump(DB::table('enrollments')->join('courses', 'enrollments.course_id', 'courses.id')->join('periods', 'courses.period_id', 'periods.id')->where('periods.year_id', $this->reference->id)->whereIn('enrollments.status_id', Enrollment::ENROLLMENT_STATUSES_TO_COUNT_IN_STATS)
+        ->where('enrollments.parent_id', null)->where('enrollments.deleted_at', null)->distinct('student_id')->count('enrollments.student_id'));
     }
 
-    private function countInternalStudentsForPeriod(?int $gender = null)
+    private function countInternalStudentsForPeriod(?int $gender = null, ?int $age_start = null, ?int $age_end = null)
     {
         if ($this->reference::class !== Period::class) {
             abort(422, 'Logic error');
         }
 
-        if (in_array($gender, Enrollment::ENROLLMENT_STATUSES_TO_COUNT_IN_STATS)) {
+        if (in_array($gender, $this->validGenders) || $age_start !== null || $age_end !== null) {
             return DB::table('enrollments')
                 ->join('courses', 'enrollments.course_id', 'courses.id')
                 ->join('students', 'enrollments.student_id', 'students.id')
                 ->where('courses.period_id', $this->reference->id)
                 ->where('enrollments.deleted_at', null)
                 ->where('enrollments.parent_id', null)
-                ->where('students.gender_id', $gender)
                 ->whereIn('enrollments.status_id', Enrollment::ENROLLMENT_STATUSES_TO_COUNT_IN_STATS)
-                ->distinct('student_id')
-                ->count('enrollments.student_id');
-        }
-
-        if ($gender === 0) {
-            return DB::table('enrollments')
-                ->join('courses', 'enrollments.course_id', 'courses.id')
-                ->join('students', 'enrollments.student_id', 'students.id')
-                ->where('courses.period_id', $this->reference->id)
-                ->where('enrollments.deleted_at', null)
-                ->where('enrollments.parent_id', null)
-                ->where(function ($query) {
-                    return $query->where('students.gender_id', 0)->orWhereNull('students.gender_id');
+                ->tap(function($query) use ($gender) {
+                    if ($gender !== null) {
+                        if ($gender === 0) {
+                            $query->where('students.gender_id', $gender)->orWhereNull('students.gender_id');
+                        } else {
+                            $query->where('students.gender_id', $gender);
+                        }
+                    }
                 })
-                ->whereIn('enrollments.status_id', Enrollment::ENROLLMENT_STATUSES_TO_COUNT_IN_STATS)
-                ->distinct('student_id')
-                ->count('enrollments.student_id');
+                ->when($age_start, function($query, $age_start) {
+                    return $query->whereRaw('TIMESTAMPDIFF(YEAR, students.birthdate, CURDATE()) >= ?', [$age_start]);
+                })
+                ->when($age_end, function($query, $age_end) {
+                    return $query->whereRaw('TIMESTAMPDIFF(YEAR, students.birthdate, CURDATE()) <= ?', [$age_end]);
+                })
+                ->distinct('student_id')->count('enrollments.student_id');
         }
 
         return DB::table('enrollments')
