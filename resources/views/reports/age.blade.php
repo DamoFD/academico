@@ -35,12 +35,11 @@
                         <thead>
                             <th>@lang('Year')</th>
                             <th>@lang('Period')</th>
-                            <th>@lang('0-6')</th>
-                            <th>@lang('7-12')</th>
-                            <th>@lang('13-18')</th>
-                            <th>@lang('19-21')</th>
-                            <th>@lang('21+')</th>
-                            <th>@lang('unknown')</th>
+                            <th class="editable" data-age-range="0-6">@lang('0-6')</th>
+                            <th class="editable" data-age-range="7-12">@lang('7-12')</th>
+                            <th class="editable" data-age-range="13-18">@lang('13-18')</th>
+                            <th class="editable" data-age-range="19-21">@lang('19-21')</th>
+                            <th class="editable" data-age-range="21+">@lang('21+')</th>
                         </thead>
 
                         <tbody>
@@ -50,24 +49,19 @@
                                         <td></td>
                                         <td>{{ $period['period'] }}</td>
                                         <td>
-                                            @if ($period['unknown'] < 25) {{ number_format($period['0-6']) }} %
-                                            @else {{__('Insufficient data')}} @endif
+                                            {{ number_format($period['0-6']) }} %
                                         </td>
                                         <td>
-                                            @if ($period['unknown'] < 25) {{ number_format($period['7-12']) }} %
-                                            @else {{__('Insufficient data')}} @endif
+                                            {{ number_format($period['7-12']) }} %
                                         </td>
                                         <td>
-                                            @if ($period['unknown'] < 25) {{ number_format($period['13-18']) }} %
-                                            @else {{__('Insufficient data')}} @endif
+                                            {{ number_format($period['13-18']) }} %
                                         </td>
                                         <td>
-                                            @if ($period['unknown'] < 25) {{ number_format($period['19-21']) }} %
-                                            @else {{__('Insufficient data')}} @endif
+                                            {{ number_format($period['19-21']) }} %
                                         </td>
                                         <td>
-                                            @if ($period['unknown'] < 25) {{ number_format($period['21+']) }} %
-                                            @else {{__('Insufficient data')}} @endif
+                                            {{ number_format($period['21+']) }} %
                                         </td>
                                         <td>
                                             <span class="{{ $period['unknown'] < 25 ? '' : 'text-danger' }}">{{ number_format($period['unknown']) }} %</span>
@@ -139,15 +133,12 @@
                 for (const periodKey in yearData.periods) {
                     if (yearData.periods.hasOwnProperty(periodKey)) {
                         const periodData = yearData.periods[periodKey];
-                        // Check if 'unknown' percentage is less or equal to 25%
-                        if (periodData['unknown'] <= 25) {
-                            chartData.labels.push(periodData.period);
-                            for (const range of ageRanges) {
-                                let dataset = chartData.datasets.find(ds => ds.label === range);
-                                // You may need to check if dataset exists before trying to push data to it
-                                if (dataset) {
-                                    dataset.data.push(periodData[range]);
-                                }
+                        chartData.labels.push(periodData.period);
+                        for (const range of ageRanges) {
+                            let dataset = chartData.datasets.find(ds => ds.label === range);
+                            // You may need to check if dataset exists before trying to push data to it
+                            if (dataset) {
+                                dataset.data.push(periodData[range]);
                             }
                         }
                     }
@@ -200,5 +191,59 @@
                     'print'
                 ]
             }));
+    </script>
+    <script>
+        $(document).ready(() => {
+            $('.editable').click(function() {
+                console.log('clicked')
+                var range = $(this).data('age-range');
+                var content = $(this).text();
+                $(this).text('');
+                $('<input>')
+                    .attr({
+                        'type': 'text',
+                        'name': 'fname',
+                        'id': 'txt_' + range,
+                        'size': '30',
+                        'value': content
+                    })
+                    .appendTo(this)
+                    .click(function(event) {
+                        event.stopPropagation();
+                    });
+            });
+
+            $('.editable').on('blur', 'input', function (e) {
+                var newText = $(this).val();
+                var range = $(this).parent().data('age-range');
+                $(this).parent().text(newText);
+                $(this).remove(); // remove text box
+
+                $.ajax({
+                    url: '#',
+                    type: 'post',
+                    data: {
+                        range: range,
+                        value: newText,
+                        _token: '{{ csrf_token() }}' // pass CSRF token
+                    },
+                    success: function (response) {
+                        // Do something with the response
+                        if (response.success) {
+                            alert("Update successful");
+                        } else {
+                           alert("Error: " + response.error);
+                        }
+                    }
+                });
+            });
+
+            $('.editable').on('keydown', 'input', function (e) {
+                if (e.keyCode == 13) {
+                    $(this).trigger( "blur" );
+                }
+            });
+
+        })
     </script>
 @endsection
