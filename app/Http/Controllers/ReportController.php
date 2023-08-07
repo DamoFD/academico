@@ -285,9 +285,11 @@ class ReportController extends Controller
                     $studentCountInPeriod = $periodStats->studentsCount();
 
                     $yearPeriods[$period->id]['period'] = $period->name;
-                    $yearPeriods[$period->id]['male'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(2) / $studentCountInPeriod : 0;
-                    $yearPeriods[$period->id]['female'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(1) / $studentCountInPeriod : 0;
-                    $yearPeriods[$period->id]['unknown'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(0) / $studentCountInPeriod : 0;
+                    $yearPeriods[$period->id]['0-6'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 0, 6) / $studentCountInPeriod : 0;
+                    $yearPeriods[$period->id]['7-12'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 7, 12) / $studentCountInPeriod : 0;
+                    $yearPeriods[$period->id]['8-14'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 13, 18) / $studentCountInPeriod : 0;
+                    $yearPeriods[$period->id]['15-20'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 19, 21) / $studentCountInPeriod : 0;
+                    $yearPeriods[$period->id]['21+'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 21) / $studentCountInPeriod : 0;
                 }
 
                 $year = $yearData[0]->year;
