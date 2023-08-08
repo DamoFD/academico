@@ -270,6 +270,7 @@ class ReportController extends Controller
         ]);
     }
 
+    // Show ages of students based on age report settings
     public function ageReport(Request $request)
     {
         $startperiod = $this->getStartperiod($request);
@@ -318,6 +319,19 @@ class ReportController extends Controller
             'data' => $data,
             'selected_period' => $startperiod,
         ]);
+    }
+
+    public function updateAgeReport(Request $request)
+    {
+        $data = $request->validate([
+            'range' => 'required', // if you also want to validate the range
+            'value' => ['required', 'regex:/^(\d+-\d+|\d+\+)$/']
+        ]);
+
+        $range = $data['range'];
+        $value = $data['value'];
+
+        return response()->json(['success' => true]);
     }
 
     /**

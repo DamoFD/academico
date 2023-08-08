@@ -35,8 +35,8 @@
                         <thead>
                             <th>@lang('Year')</th>
                             <th>@lang('Period')</th>
-                            <th class="editable" data-age-range="0-6">@lang('0-6')</th>
-                            <th class="editable" data-age-range="7-12">@lang('7-12')</th>
+                            <th class="editable" data-age-range="1">@lang('0-6')</th>
+                            <th class="editable" data-age-range="2">@lang('7-12')</th>
                             <th class="editable" data-age-range="13-18">@lang('13-18')</th>
                             <th class="editable" data-age-range="19-21">@lang('19-21')</th>
                             <th class="editable" data-age-range="21+">@lang('21+')</th>
@@ -108,6 +108,15 @@
 @section('after_scripts')
 
     <script>
+        function randomcolor() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
         $(document).ready(() => {
         var data = @json($data);
         var axisLabel = @json(__('% of students in period'));
@@ -121,8 +130,7 @@
                     label: range,
                     data: [],
                     // Add your own color styling for each dataset
-                    backgroundColor: 'rgba(245,255,152,0.6)',
-                    borderColor: '#f5e700'
+                    backgroundColor: randomcolor()
                 }
             })
         };
@@ -193,50 +201,65 @@
             }));
     </script>
     <script>
+
         $(document).ready(() => {
-            $('.editable').click(function() {
-                console.log('clicked')
-                var range = $(this).data('age-range');
-                var content = $(this).text();
-                $(this).text('');
-                $('<input>')
-                    .attr({
-                        'type': 'text',
-                        'name': 'fname',
-                        'id': 'txt_' + range,
-                        'size': '30',
-                        'value': content
-                    })
-                    .appendTo(this)
-                    .click(function(event) {
-                        event.stopPropagation();
-                    });
+    $('.editable').on('click', handleEditableClick);
+
+    function handleEditableClick() {
+        console.log('clicked')
+        var range = $(this).data('age-range');
+        var content = $(this).text(); // this will be accessible within the inner functions
+        $(this).text('');
+
+        $('<input>')
+            .attr({
+                'type': 'text',
+                'name': 'fname',
+                'id': 'txt_' + range,
+                'size': '30',
+                'value': content
+            })
+            .appendTo(this)
+            .click(function(event) {
+                event.stopPropagation();
+            })
+            .on('blur', function() {
+                handleInputBlur.call(this, content); // pass the original content
             });
 
-            $('.editable').on('blur', 'input', function (e) {
-                var newText = $(this).val();
-                var range = $(this).parent().data('age-range');
-                $(this).parent().text(newText);
-                $(this).remove(); // remove text box
+        // Unbind the click handler temporarily
+        $('.editable').off('click', handleEditableClick);
+    }
 
-                $.ajax({
-                    url: '#',
-                    type: 'post',
-                    data: {
-                        range: range,
-                        value: newText,
-                        _token: '{{ csrf_token() }}' // pass CSRF token
-                    },
-                    success: function (response) {
-                        // Do something with the response
-                        if (response.success) {
-                            alert("Update successful");
-                        } else {
-                           alert("Error: " + response.error);
-                        }
-                    }
-                });
-            });
+            function handleInputBlur(originalContent) {
+    var newText = $(this).val();
+    var range = $(this).parent().data('age-range');
+
+    // Attach the click handler again
+    $('.editable').on('click', handleEditableClick);
+
+    var inputElement = $(this); // save reference to input
+
+    $.ajax({
+        url: '/report/age',
+        type: 'post',
+        data: {
+            range: range,
+            value: newText,
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert("Update successful");
+                inputElement.parent().text(newText);
+            } else {
+                alert("Error: " + response.error);
+                inputElement.parent().text(originalContent);
+            }
+            inputElement.remove(); // move this inside the success callback
+        }
+    });
+}
 
             $('.editable').on('keydown', 'input', function (e) {
                 if (e.keyCode == 13) {
