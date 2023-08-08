@@ -11,6 +11,7 @@ use App\Services\StatService;
 use App\Traits\PeriodSelection;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
@@ -324,12 +325,24 @@ class ReportController extends Controller
     public function updateAgeReport(Request $request)
     {
         $data = $request->validate([
-            'range' => 'required', // if you also want to validate the range
+            'range' => 'required',
             'value' => ['required', 'regex:/^(\d+-\d+|\d+\+)$/']
         ]);
 
         $range = $data['range'];
         $value = $data['value'];
+
+        $filePath = 'age_ranges.json';
+        $jsonData = Storage::disk('local')->exists($filePath) ? Storage::disk('local')->get($filePath) : "{}";
+        $rangesData = json_decode($jsonData, true);
+
+        // Update or insert data
+        $rangesData[$range] = $value;
+
+        // Write back to file
+        Storage::disk('local')->put($filePath, json_encode($rangesData));
+
+        return response()->json(['success' => true]);
 
         return response()->json(['success' => true]);
     }
