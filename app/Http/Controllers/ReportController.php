@@ -274,12 +274,15 @@ class ReportController extends Controller
     // Show ages of students based on age report settings
     public function ageReport(Request $request)
     {
+        $filePath = 'age_ranges.json';
+        $ageRanges = json_decode(Storage::disk('local')->get($filePath), true);
+
         $startperiod = $this->getStartperiod($request);
         $data = Period::orderBy('year_id')->orderBy('order')->orderBy('id')
             ->where('id', '>=', $startperiod->id)
             ->get()
             ->groupBy('year_id')
-            ->map(function ($yearData) {
+            ->map(function ($yearData) use ($ageRanges) {
                 $yearPeriods = [];
 
                 foreach ($yearData as $period) {
@@ -287,33 +290,43 @@ class ReportController extends Controller
                     $studentCountInPeriod = $periodStats->studentsCount();
 
                     $yearPeriods[$period->id]['period'] = $period->name;
-                    $yearPeriods[$period->id]['0-6'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 0, 6) / $studentCountInPeriod : 0;
-                    $yearPeriods[$period->id]['7-12'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 7, 12) / $studentCountInPeriod : 0;
-                    $yearPeriods[$period->id]['13-18'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 13, 18) / $studentCountInPeriod : 0;
-                    $yearPeriods[$period->id]['19-21'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 19, 21) / $studentCountInPeriod : 0;
-                    $yearPeriods[$period->id]['21+'] = $studentCountInPeriod > 0 ? 100 * $periodStats->studentsCount(null, 21) / $studentCountInPeriod : 0;
-                    $sumKnownPercentages = 0;
-                    foreach($yearPeriods[$period->id] as $ageRange => $percentage) {
-                        if($ageRange != 'period') { // avoid adding the 'period' key if it's not an age range
-                            $sumKnownPercentages += $percentage;
+                    foreach ($ageRanges as $key => $range) {
+                        // Split the range on '-' or consider the whole number if there's a '+'
+                        if (strpos($range, '+') !== false) {
+                            $startAge = (int) rtrim($range, '+');
+                            $endAge = null; // null or a high value depending on how you handle 21+ in studentsCount
+                        } else {
+                            list($startAge, $endAge) = explode('-', $range);
                         }
+
+                        $yearPeriods[$period->id][$range] = $studentCountInPeriod > 0 ?
+                            100 * $periodStats->studentsCount(null, $startAge, $endAge) / $studentCountInPeriod :
+                            0;
                     }
-                    $yearPeriods[$period->id]['unknown'] = 100 - $sumKnownPercentages;
                 }
 
                 $year = $yearData[0]->year;
                 $yearStats = new StatService(external: false, reference: $year);
                 $studentCountInYear = $yearStats->studentsCount();
 
-                return [
-                    'year' => $year->name,
-                    '0-6' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 0, 6) / $studentCountInYear : 0,
-                    '7-12' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 7, 12) / $studentCountInYear : 0,
-                    '13-18' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 13, 18) / $studentCountInYear : 0,
-                    '19-21' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 19, 21) / $studentCountInYear : 0,
-                    '21+' => $studentCountInYear > 0 ? 100 * $yearStats->studentsCount(null, 21) / $studentCountInYear : 0,
-                    'periods' => $yearPeriods,
-                ];
+                $yearResults = ['year' => $year->name];
+
+                foreach ($ageRanges as $range) {
+                    if (strpos($range, '+') !== false) {
+                        $startAge = (int) rtrim($range, '+');
+                        $endAge = null; // null or a high value depending on how you handle 21+ in studentsCount
+                    } else {
+                        list($startAge, $endAge) = explode('-', $range);
+                    }
+
+                    $yearResults[$range] = $studentCountInYear > 0 ?
+                        100 * $yearStats->studentsCount(null, $startAge, $endAge) / $studentCountInYear :
+                        0;
+                }
+
+                $yearResults['periods'] = $yearPeriods;
+
+                return $yearResults;
             });
 
         return view('reports.age', [
