@@ -35,11 +35,9 @@
                         <thead>
                             <th>@lang('Year')</th>
                             <th>@lang('Period')</th>
-                            <th class="editable" data-age-range="1">@lang('0-6')</th>
-                            <th class="editable" data-age-range="2">@lang('7-12')</th>
-                            <th class="editable" data-age-range="13-18">@lang('13-18')</th>
-                            <th class="editable" data-age-range="19-21">@lang('19-21')</th>
-                            <th class="editable" data-age-range="21+">@lang('21+')</th>
+                            @foreach($ageRanges as $key => $range)
+                                <th class="editable" data-age-range="{{ $key }}">@lang($range)</th>
+                            @endforeach
                         </thead>
 
                         <tbody>
@@ -48,47 +46,21 @@
                                     <tr>
                                         <td></td>
                                         <td>{{ $period['period'] }}</td>
-                                        <td>
-                                            {{ number_format($period['0-6']) }} %
-                                        </td>
-                                        <td>
-                                            {{ number_format($period['7-12']) }} %
-                                        </td>
-                                        <td>
-                                            {{ number_format($period['13-18']) }} %
-                                        </td>
-                                        <td>
-                                            {{ number_format($period['19-21']) }} %
-                                        </td>
-                                        <td>
-                                            {{ number_format($period['21+']) }} %
-                                        </td>
-                                        <td>
-                                            <span class="{{ $period['unknown'] < 25 ? '' : 'text-danger' }}">{{ number_format($period['unknown']) }} %</span>
-                                        </td>
+                                        @foreach($ageRanges as $range)
+                                            <td>
+                                                {{ number_format($period[$range]) }} %
+                                            </td>
+                                        @endforeach
                                     </tr>
                                 @endforeach
                                 <tr style="font-weight: bold">
                                     <td>{{ $year['year'] }}</td>
                                     <td></td>
-                                    <td>
-                                        {{ number_format($period['0-6']) }} %
-                                    </td>
-                                    <td>
-                                        {{ number_format($period['7-12']) }} %
-                                    </td>
-                                    <td>
-                                        {{ number_format($period['13-18']) }} %
-                                    </td>
-                                    <td>
-                                        {{ number_format($period['19-21']) }} %
-                                    </td>
-                                    <td>
-                                        {{ number_format($period['21+']) }} %
-                                    </td>
-                                    <td>
-                                        {{ number_format($period['unknown']) }} %
-                                    </td>
+                                    @foreach($ageRanges as $range)
+                                        <td>
+                                            {{ number_format($year[$range]) }} %
+                                        </td>
+                                    @endforeach
                                 </tr>
                             @endforeach
 

@@ -332,6 +332,7 @@ class ReportController extends Controller
         return view('reports.age', [
             'data' => $data,
             'selected_period' => $startperiod,
+            'ageRanges' => $ageRanges,
         ]);
     }
 
