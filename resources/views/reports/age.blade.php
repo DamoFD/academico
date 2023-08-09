@@ -41,19 +41,19 @@
                         </thead>
 
                         <tbody>
-                            @foreach($data as $year)
-                                @foreach($year['periods'] as $period)
-                                    <tr>
+                            @foreach($data as $yearKey => $year)
+                                @foreach($year['periods'] as $periodKey => $period)
+                                    <tr class="period-row" data-year="{{ $yearKey }}" data-period="{{ $periodKey }}">
                                         <td></td>
                                         <td>{{ $period['period'] }}</td>
                                         @foreach($ageRanges as $range)
-                                            <td>
+                                            <td data-period="{{ $period['period'] }}">
                                                 {{ number_format($period[$range]) }} %
                                             </td>
                                         @endforeach
                                     </tr>
                                 @endforeach
-                                <tr style="font-weight: bold">
+                                <tr class="year-row" data-year="{{ $yearKey }}" style="font-weight: bold">
                                     <td>{{ $year['year'] }}</td>
                                     <td></td>
                                     @foreach($ageRanges as $range)
@@ -175,12 +175,14 @@
     <script>
 
         $(document).ready(() => {
+            var startYear, startPeriod
     $('.editable').on('click', handleEditableClick);
 
     function handleEditableClick() {
         console.log('clicked')
         var range = $(this).data('age-range');
         var content = $(this).text(); // this will be accessible within the inner functions
+        var startPeriod = $(this).data('period');
         $(this).text('');
 
         $('<input>')
@@ -203,6 +205,28 @@
         $('.editable').off('click', handleEditableClick);
     }
 
+        function updateTableWithData(updatedData, ageRanges) {
+    $.each(updatedData, function(yearKey, yearData) {
+        // Update period rows
+        $.each(yearData['periods'], function(periodKey, periodData) {
+            var periodRow = $('.period-row[data-year="' + yearKey + '"][data-period="' + periodKey + '"]');
+            $.each(ageRanges, function(rangeIndex, ageRange) {
+                var cellValue = periodData[ageRange];
+                var cellElement = periodRow.find('td[data-age-range="' + ageRange + '"]');
+                cellElement.text(cellValue + " %");
+            });
+        });
+
+        // Update year summary row
+        var yearRow = $('.year-row[data-year="' + yearKey + '"]');
+        $.each(ageRanges, function(rangeIndex, ageRange) {
+            var cellValue = yearData[ageRange];
+            var cellElement = yearRow.find('td[data-age-range="' + ageRange + '"]');
+            cellElement.text(cellValue + " %");
+        });
+    });
+}
+
             function handleInputBlur(originalContent) {
     var newText = $(this).val();
     var range = $(this).parent().data('age-range');
@@ -211,6 +235,7 @@
     $('.editable').on('click', handleEditableClick);
 
     var inputElement = $(this); // save reference to input
+                console.log(startPeriod)
 
     $.ajax({
         url: '/report/age',
@@ -218,12 +243,15 @@
         data: {
             range: range,
             value: newText,
+            startPeriod: startPeriod,
             _token: '{{ csrf_token() }}'
         },
         success: function(response) {
             if (response.success) {
                 alert("Update successful");
                 inputElement.parent().text(newText);
+                console.log(response.data)
+                updateTableWithData(response.data, response.ageRanges);
             } else {
                 alert("Error: " + response.error);
                 inputElement.parent().text(originalContent);

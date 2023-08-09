@@ -271,8 +271,7 @@ class ReportController extends Controller
         ]);
     }
 
-    // Show ages of students based on age report settings
-    public function ageReport(Request $request)
+    private function processAgeReportData(Request $request)
     {
         $filePath = 'age_ranges.json';
         $ageRanges = json_decode(Storage::disk('local')->get($filePath), true);
@@ -328,11 +327,22 @@ class ReportController extends Controller
 
                 return $yearResults;
             });
+        return [
+            'data' => $data,
+            'startperiod' => $startperiod,
+            'ageRanges' => $ageRanges,
+        ];
+    }
+
+    // Show ages of students based on age report settings
+    public function ageReport(Request $request)
+    {
+        $results = $this->processAgeReportData($request);
 
         return view('reports.age', [
-            'data' => $data,
-            'selected_period' => $startperiod,
-            'ageRanges' => $ageRanges,
+            'data' => $results['data'],
+            'selected_period' => $results['startperiod'],
+            'ageRanges' => $results['ageRanges'],
         ]);
     }
 
@@ -355,10 +365,16 @@ class ReportController extends Controller
 
         // Write back to file
         Storage::disk('local')->put($filePath, json_encode($rangesData));
+        dd($request);
 
-        return response()->json(['success' => true]);
+        $results = $this->processAgeReportData();
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'updatedData' => $results['data'],
+            'startperiod' => $results['startperiod'],
+            'ageRanges' => $results['ageRanges']
+        ]);
     }
 
     /**
